@@ -1,0 +1,8 @@
+[Unit]
+Description=Auto front-camera bridge for virtual webcam
+[Service]
+ExecStart=/usr/bin/python3 /home/mike/bin/camd.py
+Restart=always
+RestartSec=3
+[Install]
+WantedBy=default.target

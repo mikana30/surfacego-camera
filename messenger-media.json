@@ -1,0 +1,4 @@
+{
+  "VideoCaptureAllowedUrls": ["https://www.messenger.com", "https://messenger.com", "https://www.facebook.com"],
+  "AudioCaptureAllowedUrls": ["https://www.messenger.com", "https://messenger.com", "https://www.facebook.com"]
+}
