@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
 """Virtual webcam daemon for /dev/video20.
 Permanent feeder pipeline (black when idle) + on-demand camera pipeline,
-both in one process so the intervideo channel connects them."""
+both in one process so the intervideo channel connects them.
+The feeder is PAUSED while nobody reads: v4l2sink stays attached (device
+remains capture-visible) but stops pushing frames, so idle CPU is ~0."""
 import os, subprocess, signal
 import gi
 gi.require_version('Gst', '1.0')
@@ -19,6 +21,7 @@ feeder.set_state(Gst.State.PLAYING)
 
 campipe = None
 idle = 0
+feeder_paused = False
 mypid = str(os.getpid())
 
 def external_readers():
@@ -30,10 +33,14 @@ def external_readers():
         return []
 
 def tick():
-    global campipe, idle
+    global campipe, idle, feeder_paused
     ext = external_readers()
     if ext:
         idle = 0
+        if feeder_paused:
+            feeder.set_state(Gst.State.PLAYING)
+            feeder_paused = False
+            print('FEEDER RESUME', flush=True)
         if campipe is None:
             campipe = Gst.parse_launch(
                 'libcamerasrc camera-name="%s" ! video/x-raw,width=1280,height=720,format=NV12 '
@@ -47,6 +54,13 @@ def tick():
             campipe.set_state(Gst.State.NULL)
             campipe = None
             print('CAM STOP', flush=True)
+            idle = 0
+    elif not feeder_paused:
+        idle += 1
+        if idle >= IDLE_LIMIT:
+            feeder.set_state(Gst.State.PAUSED)
+            feeder_paused = True
+            print('FEEDER PAUSE', flush=True)
             idle = 0
     return True
 
