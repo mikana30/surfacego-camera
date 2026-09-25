@@ -1,6 +1,10 @@
 [Unit]
 Description=Auto front-camera bridge for virtual webcam
 [Service]
+# After a kernel update akmods rebuilds v4l2loopback during boot; wait for
+# /dev/video20 so camd doesn't attach before the device exists.
+ExecStartPre=/bin/sh -c 'for i in $(seq 300); do [ -e /dev/video20 ] && exit 0; sleep 1; done; echo "/dev/video20 never appeared" >&2; exit 1'
+TimeoutStartSec=330
 ExecStart=/usr/bin/python3 /home/mike/bin/camd.py
 Restart=always
 RestartSec=3
